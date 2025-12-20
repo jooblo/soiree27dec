@@ -3,279 +3,733 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Secret Santa 27 Déc</title>
+    <title>Soirée Chic 27 Déc</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400;1,600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
             --gold: #d4af37;
-            --gold-glow: rgba(212, 175, 55, 0.3);
-            --bg: #050505;
-            --card: rgba(20, 20, 20, 0.95);
+            --gold-gradient: linear-gradient(135deg, #e3c565 0%, #d4af37 50%, #b89222 100%);
+            --card-glass: rgba(20, 25, 35, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.1);
             --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --success: #27ae60;
+            --error: #c0392b;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Montserrat', sans-serif;
-            background-color: var(--bg);
-            background-image: radial-gradient(circle at top, #1a1a1a, #000);
-            color: var(--text);
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
+            background: linear-gradient(rgba(0, 0, 10, 0.6), rgba(0, 0, 10, 0.8)),
+                        url('https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: var(--text); margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100dvh; overflow: hidden;
         }
 
         .container {
-            width: 100%; max-width: 500px;
-            background: var(--card);
-            border: 1px solid #333;
-            border-radius: 24px;
-            padding: 30px 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-            backdrop-filter: blur(10px);
+            width: 100%; max-width: 480px; height: 100dvh;
+            background: var(--card-glass);
+            display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 80px rgba(0,0,0,0.9);
+            border-left: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
 
-        h1 {
-            font-family: 'Playfair Display', serif;
-            color: var(--gold);
-            text-align: center; margin: 0 0 10px 0;
-            font-size: 2rem;
+        /* --- HEADER --- */
+        .header-area { 
+            padding: 30px 25px 10px 25px; flex-shrink: 0; z-index: 2; 
+            border-bottom: 1px solid var(--border-glass); 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
         }
         
-        .subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 30px; }
-
-        .input-group { margin-bottom: 15px; }
-        label { display: block; color: var(--gold); font-size: 0.8rem; margin-bottom: 5px; margin-left: 5px; }
+        h1 { 
+            font-family: 'Playfair Display', serif; 
+            color: var(--gold); text-align: center; margin: 0; 
+            font-size: 2.2rem; letter-spacing: -0.5px;
+            text-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+            user-select: none;
+        }
         
-        input {
-            width: 100%; padding: 16px;
-            background: #111; border: 1px solid #333;
-            color: white; border-radius: 12px;
-            font-family: inherit; font-size: 1rem;
-            transition: 0.3s; box-sizing: border-box;
+        .subtitle { 
+            text-align: center; color: var(--text-muted); 
+            font-size: 0.75rem; margin-top: 8px; 
+            font-weight: 400; text-transform: uppercase; letter-spacing: 2px;
         }
-        input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 15px var(--gold-glow); }
 
-        button {
-            width: 100%; padding: 16px; border: none; border-radius: 12px;
-            font-weight: 800; font-size: 1rem; cursor: pointer;
-            text-transform: uppercase; margin-top: 10px;
-            transition: transform 0.2s;
+        /* --- SCROLL AREA --- */
+        .content-scroll-area { 
+            flex-grow: 1; overflow-y: auto; padding: 25px; 
+            -webkit-overflow-scrolling: touch; z-index: 1; 
         }
-        button:active { transform: scale(0.98); }
+        .content-scroll-area::-webkit-scrollbar { width: 4px; }
+        .content-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
 
-        .btn-gold { background: linear-gradient(135deg, #d4af37, #aa8c2c); color: #000; }
-        .btn-admin { background: #222; color: #ccc; border: 1px solid #444; margin-top: 30px; font-size: 0.8rem; padding: 12px; }
+        /* --- WIZARD --- */
+        .wizard { 
+            display: flex; justify-content: center; gap: 40px; 
+            margin-top: 25px; padding-bottom: 5px; position: relative; 
+        }
+        .wizard::before { 
+            content: ''; position: absolute; top: 10px; left: 20%; right: 20%; height: 1px; 
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); z-index: 0; 
+        }
+        .step { 
+            position: relative; z-index: 1; text-align: center; opacity: 0.3; 
+            transition: 0.4s; transform: scale(0.9);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .step.active { opacity: 1; transform: scale(1); }
+        .step.completed { opacity: 0.8; color: var(--gold); }
+        .step-icon { 
+            width: 22px; height: 22px; background: #1a1a1a; 
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; 
+            margin-bottom: 8px; display: flex; align-items: center; justify-content: center; 
+            font-size: 0.6rem; color: #fff; box-shadow: 0 0 0 4px rgba(20, 25, 35, 1);
+        }
+        .step.active .step-icon { border-color: var(--gold); background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+        .step.completed .step-icon { border-color: var(--gold); color: var(--gold); background: transparent; }
+        .step-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 2px;}
 
-        #list { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
-        .participant-row {
+        /* --- FORMULAIRE --- */
+        .input-group { margin-bottom: 25px; position: relative; }
+        label { 
+            display: block; color: var(--gold); font-size: 0.65rem; 
+            margin-bottom: 8px; margin-left: 2px; 
+            text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
+        }
+        input, select {
+            width: 100%; padding: 15px 0; background: transparent; 
+            border: none; border-bottom: 1px solid rgba(255,255,255,0.15);
+            color: white; border-radius: 0; font-family: 'Playfair Display', serif; font-size: 1.1rem; 
+            transition: 0.3s; appearance: none; outline: none;
+        }
+        /* CORRECTION VISIBILITE OPTIONS */
+        select option { background-color: #fff; color: #000; } 
+        
+        input:focus, select:focus { border-bottom-color: var(--gold); background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.05)); }
+        input::placeholder { color: rgba(255,255,255,0.2); font-family: 'Montserrat', sans-serif; font-size: 0.9rem;}
+        .select-wrapper::after { content: '›'; transform: rotate(90deg) translateY(-50%); right: 0; position: absolute; top:50%; color:var(--gold); }
+
+        .btn-gold { 
+            width: 100%; padding: 18px; border: none; border-radius: 2px;
+            font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 3px;
+            background: var(--gold-gradient); color: #000; 
+            position: relative; overflow: hidden; display: flex; justify-content: center; gap: 10px;
+            transition: 0.3s; margin-top: 20px;
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2); }
+        button:disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+        
+        .btn-add-person { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); 
+            color: rgba(255,255,255,0.6); width: 100%; padding: 12px; 
+            font-size: 0.75rem; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-add-person:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+
+        .btn-danger {
+            background: transparent; border: 1px solid rgba(192, 57, 43, 0.5); 
+            color: #c0392b; width: 100%; padding: 12px; 
+            font-size: 0.65rem; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 2px; margin-top: 30px;
+        }
+        .btn-danger:hover { background: rgba(192, 57, 43, 0.2); border-color: #c0392b; color: #fff; }
+
+        /* --- LISTE --- */
+        .waiting-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-glass); }
+        .count-badge { font-family: 'Playfair Display', serif; font-size: 3rem; line-height: 1; color: var(--gold); }
+        .status-text { font-size: 0.75rem; color: #666; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;}
+        
+        .participant-row { 
+            display: flex; flex-direction: column; 
+            padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0; transform: translateY(10px);
+        }
+        .row-main { width:100%; display: flex; justify-content: space-between; align-items: center; }
+        
+        .participant-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #e0e0e0; }
+        .participant-row.is-me .participant-name { color: var(--gold); }
+        .tag-group { 
+            font-size: 0.55rem; border: 1px solid rgba(255,255,255,0.1); 
+            color: #888; padding: 3px 8px; border-radius: 2px; margin-left: 10px; 
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .my-target-badge {
+            background: transparent; color: var(--gold); font-weight: 600;
+            padding: 6px 15px; border: 1px solid var(--gold); font-size: 0.65rem;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;
+        }
+        .my-target-badge:hover { background: var(--gold); color: #000; }
+        .btn-claim { 
+            background: transparent; color: #555; border: none; font-size: 0.65rem; 
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; 
+            text-decoration: underline; transition: 0.3s;
+        }
+        .btn-claim:hover { color: var(--gold); }
+
+        /* --- GOD MODE STYLES --- */
+        .god-select {
+            display: none; width: 100%; margin-top: 5px; padding: 5px;
+            background: rgba(50, 0, 0, 0.6); color: #ffaaaa; border: 1px solid #550000;
+            font-size: 0.7rem; font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+        }
+        body.god-mode-active .god-select { display: block; }
+        body.god-mode-active .participant-row { border-bottom-color: rgba(255, 0, 0, 0.1); }
+
+        /* --- FOOTER --- */
+        .footer-area { 
+            padding: 20px; border-top: 1px solid var(--border-glass); 
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-            animation: fadeIn 0.5s ease;
+            background: rgba(0,0,0,0.3); font-size: 0.65rem; color: #555; 
+            text-transform: uppercase; letter-spacing: 1px; z-index: 2;
         }
-        .tag-group { font-size: 0.7rem; background: #333; color: #aaa; padding: 2px 8px; border-radius: 6px; margin-left: 8px; }
+        .footer-link { cursor: pointer; transition: 0.3s; text-decoration: none; color: inherit; }
+        .footer-link:hover { color: var(--text); }
 
-        .result-card {
-            background: #222; border: 1px solid #444; padding: 20px; border-radius: 16px; margin-bottom: 15px; text-align: center;
+        /* --- MODAL --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 9999; 
+            display: flex; justify-content: center; align-items: center; padding: 30px; 
+            backdrop-filter: blur(15px);
         }
-        .whatsapp-btn {
-            background: #25D366; color: white; display: flex; justify-content: center; align-items: center; gap: 10px;
-            text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px;
+        .modal-content { 
+            width: 100%; max-width: 380px; text-align: center; position: relative;
+            animation: zoomIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .modal-content::after {
+            content: ''; position: absolute; top: -20px; bottom: -20px; left: 0; right: 0;
+            border: 1px solid rgba(212, 175, 55, 0.3); pointer-events: none;
+        }
+        .modal-intro { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; }
+        .modal-giver { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold); margin-bottom: 40px; font-style: italic; }
+        .modal-label { font-size: 0.7rem; color: #fff; margin-bottom: 15px; font-weight: 300; }
+        .modal-target { 
+            font-family: 'Montserrat', sans-serif; font-size: 2.5rem; 
+            color: #fff; margin-bottom: 50px; font-weight: 800; 
+            text-transform: uppercase; letter-spacing: 2px;
+            background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .hidden { display: none; }
-        .loading { color: #888; font-style: italic; text-align: center; margin-top: 20px; }
-        @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .spinner { width: 16px; height: 16px; border: 1px solid rgba(0,0,0,0.1); border-top-color: #000; border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+        button.loading .spinner { display: block; }
+        
+        .btn-share-app { 
+            position: absolute; top: 25px; right: 25px; 
+            background: transparent; border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--gold); width: 30px; height: 30px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; transition: 0.3s;
+        }
+        .btn-share-app:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+
+        #toast-container { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 10000; width: auto; pointer-events: none; }
+        .toast { 
+            background: #111; color: var(--gold); padding: 12px 25px; margin-bottom: 10px; 
+            border: 1px solid rgba(212, 175, 55, 0.3); font-size: 0.75rem; 
+            text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideDown 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* --- EASTER EGG --- */
+        #flying-plane {
+            position: fixed; top: 20%; left: -100px; font-size: 4rem; z-index: 9999;
+            pointer-events: none; opacity: 0; filter: drop-shadow(0 0 10px var(--gold));
+        }
+        @keyframes flyAcrossScreen {
+            0% { left: -100px; opacity: 0; transform: translateY(0) rotate(15deg); }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { left: 110vw; opacity: 0; transform: translateY(-300px) rotate(35deg); }
+        }
+        .is-flying { animation: flyAcrossScreen 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+        @keyframes zoomIn { from{opacity:0; transform:scale(0.95);} to{opacity:1; transform:scale(1);} }
+        @keyframes slideDown { from{opacity:0; transform:translateY(-100%);} to{opacity:1; transform:translateY(0);} }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Soirée 27 Décembre</h1>
-    <p class="subtitle">Espace Secret Santa</p>
-
-    <div id="view-signup">
-        <div class="input-group">
-            <label>Ton Prénom</label>
-            <input type="text" id="inpName" placeholder="Ex: Laura">
-        </div>
-        <div class="input-group">
-            <label>Ton Groupe (Optionnel)</label>
-            <input type="text" id="inpGroup" placeholder="Ex: Couple A">
-            <div style="font-size:0.7rem; color:#666; margin-top:5px; margin-left:5px;">
-                Mets le même nom de groupe que ton conjoint(e) pour ne pas tomber sur lui/elle.
-            </div>
-        </div>
+<div id="reveal-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-intro">Cadeau offert par</div>
+        <div id="giver-display-name" class="modal-giver">...</div>
         
-        <button class="btn-gold" onclick="register()">Je participe !</button>
-        <p id="msg-status" style="text-align:center; margin-top:15px; color:var(--gold);"></p>
-    </div>
-
-    <div id="list">
-        <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; color:#666; margin-bottom:10px;">
-            Participants inscrits (<span id="count">0</span>)
+        <div class="modal-label">POUR L'INVITÉ(E)</div>
+        <div id="target-display-name" class="modal-target">...</div>
+        
+        <button class="btn-gold" onclick="closeModal()">C'est noté</button>
+        <div style="margin-top:20px;">
+            <span onclick="closeModal()" style="font-size:0.65rem; color:#555; cursor:pointer; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #333;">Fermer discrètement</span>
         </div>
-        <div id="participants-container"></div>
-        <div id="loader" class="loading">Chargement...</div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="flying-plane">✈️</div>
+
+<div class="container">
+    
+    <div class="header-area">
+        <button class="btn-share-app" onclick="shareAppUrl()" title="Partager">🔗</button>
+        <h1 onclick="handleTitleClick()"><span style="cursor:pointer;" onclick="triggerEasterEgg(); event.stopPropagation();">✨</span> Soirée du 27 ✨</h1>
+        <p class="subtitle">Élégance, Braséro & Tirage Surprise</p>
+
+        <div class="wizard">
+            <div id="step-1" class="step active"><div class="step-icon">I</div><span class="step-label">Inscription</span></div>
+            <div id="step-2" class="step"><div class="step-icon">II</div><span class="step-label">Attente</span></div>
+            <div id="step-3" class="step"><div class="step-icon">III</div><span class="step-label">Révélation</span></div>
+        </div>
     </div>
 
-    <div id="view-admin" class="hidden">
-        <div style="height:1px; background:#333; margin:30px 0;"></div>
-        <h3 style="color:var(--gold); text-align:center;">Zone Organisateur</h3>
-        <p style="text-align:center; font-size:0.8rem; color:#888;">
-            Attends que tout le monde soit inscrit, puis lance le tirage.
-        </p>
-        <button class="btn-gold" onclick="launchDraw()">🎲 LANCER LE TIRAGE</button>
-        <p id="draw-error" style="color:#ff5555; text-align:center; display:none; margin-top:10px;"></p>
-        <div id="results-area" style="margin-top:20px;"></div>
+    <div class="content-scroll-area">
+        
+        <div id="welcome-back-msg" class="hidden" style="text-align:center; margin-bottom:30px; opacity:0; animation: fadeIn 1s forwards;">
+            <p style="font-family:'Playfair Display'; font-style:italic; font-size:1.1rem; color:var(--gold); margin-bottom:5px;">Ravi de vous revoir.</p>
+            <button class="btn-claim" onclick="forceShowSignup()" style="font-size:0.6rem; color:#666; margin-top:5px;">+ Ajouter un invité</button>
+        </div>
+
+        <div id="view-signup">
+            <div class="input-group">
+                <label>Prénoms des invités</label>
+                <div id="names-container">
+                    <input type="text" class="name-input" placeholder="Votre Prénom" oninput="validateForm()">
+                </div>
+                <button class="btn-add-person" onclick="addNameField()">+ Ajouter une personne</button>
+            </div>
+            
+            <div class="input-group">
+                <label>Famille</label>
+                <div class="select-wrapper">
+                    <select id="groupSelect" onchange="handleGroupChange()">
+                        <option value="">Aucun (Solo)</option>
+                        <option value="new">Créer un nouveau groupe...</option>
+                    </select>
+                </div>
+                <input type="text" id="newGroupInput" class="hidden" placeholder="Nom de la famille" style="margin-top:10px;">
+            </div>
+            
+            <button id="btn-register" class="btn-gold" onclick="register()" disabled>
+                <span>Confirmer</span><div class="spinner"></div>
+            </button>
+        </div>
+
+        <div id="list">
+            <div class="waiting-header">
+                <div id="draw-status" style="color:var(--success); font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:15px; display:none;">Tirage Effectué</div>
+                <div class="count-badge"><span id="count">0</span><span id="target-display" style="font-size:1.5rem; opacity:0.3; font-weight:300;"></span></div>
+                <div id="waiting-msg" class="status-text">...</div>
+            </div>
+            <div id="participants-container"></div>
+        </div>
+
+        <div id="view-admin" class="hidden" style="margin-top:40px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.05);">
+            <div class="input-group" style="display:flex; align-items:flex-end; gap:15px;">
+                <div style="flex-grow:1;">
+                    <label>Cible Invités</label>
+                    <input type="number" id="adminTarget" placeholder="12" style="text-align:center;">
+                </div>
+                <button class="btn-add-person" style="width:auto; padding:14px 20px; margin-bottom:2px;" onclick="saveConfig()">OK</button>
+            </div>
+            <button id="btn-draw" class="btn-gold" style="background:#222; color:#fff; border:1px solid #333;" onclick="launchDraw()">
+                <span>Lancer le tirage</span><div class="spinner"></div>
+            </button>
+            <button id="btn-reset" class="btn-danger" onclick="resetEvent()">⚠ Réinitialiser Tout</button>
+        </div>
     </div>
 
-    <div id="admin-link-area" style="text-align:center; margin-top:40px;">
-        <span style="font-size:0.7rem; color:#444; cursor:pointer; text-decoration:underline;" onclick="becomeAdmin()">
-            Je suis l'organisateur
-        </span>
+    <div class="footer-area">
+        <span class="footer-link" onclick="resetLocalIdentity()">Déconnexion</span>
+        <span class="footer-link" onclick="becomeAdmin()">Admin</span>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
+    // --- CONFIG ---
     const SUPABASE_URL = "https://trhdwabtdkbzqadqznvq.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_nbE57FWx6IYsRW7Qh_a8zA_Afwp4p4Y";
-    
-    // Initialisation avec un nom de variable unique (sbClient) pour éviter les conflits
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
     const params = new URLSearchParams(location.search);
-    const EVENT_ID = params.get('event') || 'soiree27'; 
+    const EVENT_ID = params.get('event') || 'soiree27_v28_final';
+    let isAdmin = params.get('admin') === 'true';
+    let targetParticipants = 0;
     
-    window.onload = function() {
-        fetchParticipants();
-        setInterval(fetchParticipants, 5000);
+    // --- GOD MODE STATE ---
+    let titleClickCount = 0;
+    let titleClickTimer;
 
-        if(params.get('admin') === 'true') {
-            document.getElementById('view-admin').classList.remove('hidden');
-            document.getElementById('admin-link-area').classList.add('hidden');
-            document.getElementById('view-signup').classList.add('hidden');
-        }
+    // --- INIT ---
+    window.onload = function() {
+        refreshAll();
+        setInterval(refreshAll, 5000);
+        if(isAdmin) document.getElementById('view-admin').classList.remove('hidden');
+        else document.querySelector('.name-input').focus();
     };
 
-    async function register() {
-        const name = document.getElementById('inpName').value.trim();
-        const group = document.getElementById('inpGroup').value.trim();
+    function getMyIds() { try { return JSON.parse(localStorage.getItem('my_santa_ids_' + EVENT_ID) || '[]'); } catch { return []; } }
+    function addMyId(id) { const ids = getMyIds(); if(!ids.includes(id)) { ids.push(id); localStorage.setItem('my_santa_ids_' + EVENT_ID, JSON.stringify(ids)); } }
+    function resetLocalIdentity() { if(confirm("Se déconnecter de cet appareil ?")) { localStorage.removeItem('my_santa_ids_' + EVENT_ID); location.reload(); } }
 
-        if(!name) return alert("Indique ton prénom !");
-        document.getElementById('msg-status').innerText = "Envoi...";
-
-        // Utilisation de sbClient (et non supabase)
-        const { error } = await sbClient.from('participants').insert([
-            { event_id: EVENT_ID, name: name, group_label: group || null }
-        ]);
-
-        if(error) {
-            alert("Erreur Inscription : " + error.message);
-            document.getElementById('msg-status').innerText = "";
-        } else {
-            document.getElementById('msg-status').innerText = "✅ Inscrit !";
-            document.getElementById('inpName').value = "";
-            document.getElementById('inpGroup').value = "";
-            fetchParticipants();
+    // --- GOD MODE TRIGGER ---
+    function handleTitleClick() {
+        titleClickCount++;
+        clearTimeout(titleClickTimer);
+        titleClickTimer = setTimeout(() => { titleClickCount = 0; }, 1000);
+        
+        if (titleClickCount === 3) {
+            document.body.classList.toggle('god-mode-active');
+            if(document.body.classList.contains('god-mode-active')) {
+                showToast("🕵️‍♂️ Mode Dieu Activé", "error");
+                becomeAdminSilent();
+            } else {
+                showToast("Mode Dieu Désactivé", "info");
+            }
+            titleClickCount = 0;
+            refreshAll();
+        }
+    }
+    
+    function becomeAdminSilent() {
+        if(!isAdmin) {
+            const u = new URL(window.location); u.searchParams.set('admin', 'true'); 
+            window.history.replaceState({}, '', u); 
+            isAdmin = true;
+            document.getElementById('view-admin').classList.remove('hidden');
         }
     }
 
-    async function fetchParticipants() {
-        // Utilisation de sbClient
-        const { data, error } = await sbClient
-            .from('participants')
-            .select('*')
-            .eq('event_id', EVENT_ID)
-            .order('created_at', { ascending: true });
+    // --- CORE LOGIC ---
+    async function refreshAll() {
+        const { data: parts } = await sbClient.from('participants').select('*').eq('event_id', EVENT_ID).order('created_at', { ascending: true });
+        const { data: results } = await sbClient.from('draw_results').select('*').eq('event_id', EVENT_ID);
 
-        if(error) {
-            document.getElementById('loader').innerText = "ERREUR BDD : " + error.message;
-            document.getElementById('loader').style.color = "red";
-            console.error(error);
-        } else if(data) {
-            document.getElementById('loader').classList.add('hidden');
-            renderList(data);
+        if(parts) {
+            const realParts = parts.filter(p => p.name !== '_CONFIG_');
+            const config = parts.find(p => p.name === '_CONFIG_');
+            if(config) { targetParticipants = parseInt(config.group_label); document.getElementById('adminTarget').value = targetParticipants; }
+            
+            renderList(realParts, results || []);
+            renderGroupOptions(realParts);
+            updateWizard(realParts, results || []);
+            updateHeader(realParts, results || []);
         }
     }
 
-    function renderList(participants) {
+    function renderList(parts, results) {
         const container = document.getElementById('participants-container');
-        document.getElementById('count').innerText = participants.length;
-        container.innerHTML = '';
+        const currentGodSelections = {};
+        document.querySelectorAll('.god-select').forEach(sel => {
+            if(sel.value) currentGodSelections[sel.dataset.giverId] = sel.value;
+        });
 
-        participants.forEach(p => {
+        container.innerHTML = '';
+        const drawDone = results && results.length > 0;
+        const myIds = getMyIds();
+
+        parts.forEach((p, index) => {
             const div = document.createElement('div');
-            div.className = 'participant-row';
-            div.innerHTML = `<span style="font-weight:600;">${p.name}</span>${p.group_label ? `<span class="tag-group">${p.group_label}</span>` : ''}`;
+            const isMe = myIds.includes(p.id);
+            div.className = `participant-row ${isMe ? 'is-me' : ''}`;
+            div.style.animationDelay = `${index * 0.05}s`;
+            
+            let action = '';
+            if(drawDone) {
+                if(isMe) {
+                    const target = results.find(r => r.giver_id === p.id);
+                    if(target) {
+                        const hasSeen = sessionStorage.getItem('seen_'+p.id);
+                        action = `<button class="my-target-badge" onclick="openReveal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${target.receiver_name.replace(/'/g, "\\'")}')">${hasSeen ? "Rappel" : "Voir Cible"}</button>`;
+                    }
+                } else if(!isAdmin && myIds.length === 0) {
+                    action = `<button class="btn-claim" onclick="claimIdentity(${p.id}, '${p.name}')">C'est moi</button>`;
+                } else {
+                    action = `<span style="font-size:0.6rem; color:#444; letter-spacing:1px;">SECRET</span>`;
+                }
+            } else {
+                if(isMe) action = `<span style="font-size:0.6rem; color:var(--gold); letter-spacing:1px;">CONFIRMÉ</span>`;
+                else if(!isAdmin && !myIds.length) action = `<button class="btn-claim" onclick="claimIdentity(${p.id}, '${p.name}')">C'est moi</button>`;
+            }
+
+            const delBtn = isAdmin ? `<button style="background:none; border:none; color:#444; cursor:pointer; margin-left:10px;" onclick="deleteUser(${p.id})">×</button>` : '';
+
+            let godOptions = `<option value="">-- Cible Forcée --</option>`;
+            parts.forEach(target => {
+                if(target.id !== p.id) {
+                    const selAttr = (currentGodSelections[p.id] == target.id) ? 'selected' : '';
+                    godOptions += `<option value="${target.id}" ${selAttr}>➔ ${target.name}</option>`;
+                }
+            });
+
+            div.innerHTML = `
+                <div class="row-main">
+                    <div style="display:flex; align-items:baseline;">
+                        <span class="participant-name">${p.name}</span>
+                        ${p.group_label ? `<span class="tag-group">${p.group_label}</span>` : ''}
+                    </div>
+                    <div style="display:flex; align-items:center;">${action}${delBtn}</div>
+                </div>
+                <select class="god-select" data-giver-id="${p.id}">${godOptions}</select>
+            `;
             container.appendChild(div);
         });
-        window.currentParticipants = participants;
     }
 
-    function becomeAdmin() {
-        if(confirm("Passer en mode organisateur ?")) {
-            const url = new URL(window.location);
-            url.searchParams.set('admin', 'true');
-            window.history.pushState({}, '', url);
-            location.reload();
+    function updateHeader(parts, results) {
+        const count = parts.length;
+        const drawDone = results && results.length > 0;
+        document.getElementById('count').innerText = count;
+        
+        if(targetParticipants > 0) {
+            document.getElementById('target-display').innerText = "/ " + targetParticipants;
+            const remaining = targetParticipants - count;
+            const msgEl = document.getElementById('waiting-msg');
+            
+            if(drawDone) {
+                msgEl.innerText = "Les dés sont jetés.";
+                document.getElementById('draw-status').style.display = 'block';
+            } else if(remaining > 0) {
+                msgEl.innerText = `En attente de ${remaining} convive(s)...`;
+            } else {
+                msgEl.innerText = "La liste est complète.";
+                msgEl.style.color = "var(--gold)";
+            }
+        } else {
+            document.getElementById('waiting-msg').innerText = drawDone ? "Tirage effectué." : "En attente des inscriptions...";
         }
     }
 
-    function launchDraw() {
-        const parts = window.currentParticipants || [];
-        if(parts.length < 2) return alert("Pas assez de participants !");
+    function updateWizard(parts, results) {
+        const drawDone = results && results.length > 0;
+        const isRegistered = getMyIds().length > 0;
+        const s1 = document.getElementById('step-1').classList;
+        const s2 = document.getElementById('step-2').classList;
+        const s3 = document.getElementById('step-3').classList;
+        
+        [s1,s2,s3].forEach(c => { c.remove('active'); c.remove('completed'); });
+        
+        if(!isRegistered) {
+            s1.add('active'); 
+            if(!isAdmin) {
+                document.getElementById('view-signup').classList.remove('hidden');
+                document.getElementById('welcome-back-msg').classList.add('hidden');
+            }
+        } else {
+            s1.add('completed');
+            if(!document.getElementById('view-signup').classList.contains('force-visible')) {
+                document.getElementById('view-signup').classList.add('hidden');
+                document.getElementById('welcome-back-msg').classList.remove('hidden');
+            }
+            if(!drawDone) s2.add('active');
+            else { s2.add('completed'); s3.add('active'); }
+        }
+    }
 
-        let givers = [], receivers = [];
+    function renderGroupOptions(parts) {
+        const select = document.getElementById('groupSelect');
+        if(document.activeElement === select) return;
+        
+        const currentVal = select.value;
+        const uniqueGroups = [...new Set(parts.map(p => p.group_label).filter(g => g))].sort();
+        select.innerHTML = `<option value="">Aucun (Solo)</option><option value="new">Créer un nouveau...</option>`;
+        if(uniqueGroups.length > 0) {
+            const grp = document.createElement('optgroup'); grp.label = "Familles existantes";
+            uniqueGroups.forEach(g => { const o = document.createElement('option'); o.value = g; o.innerText = g; grp.appendChild(o); });
+            select.appendChild(grp);
+        }
+        
+        // FIX: Conserver la sélection même si c'est "new"
+        if(currentVal) select.value = currentVal;
+    }
+
+    // --- FORM ACTIONS ---
+    function addNameField() {
+        const c = document.getElementById('names-container');
+        const i = document.createElement('input'); i.type='text'; i.className='name-input'; i.placeholder='Autre prénom'; i.oninput=validateForm;
+        c.appendChild(i); i.focus();
+    }
+    function validateForm() {
+        const v = Array.from(document.querySelectorAll('.name-input')).some(i => i.value.trim().length > 0);
+        document.getElementById('btn-register').disabled = !v;
+    }
+    function handleGroupChange() {
+        const s = document.getElementById('groupSelect');
+        const i = document.getElementById('newGroupInput');
+        if(s.value==='new') { i.classList.remove('hidden'); i.focus(); } else { i.classList.add('hidden'); }
+    }
+    function forceShowSignup() {
+        document.getElementById('view-signup').classList.remove('hidden');
+        document.getElementById('view-signup').classList.add('force-visible');
+        document.getElementById('welcome-back-msg').classList.add('hidden');
+    }
+
+    // --- DB ACTIONS ---
+    async function register() {
+        const inputs = document.querySelectorAll('.name-input');
+        const names = Array.from(inputs).map(i => i.value.trim()).filter(n => n.length > 0);
+        const sel = document.getElementById('groupSelect').value;
+        let grp = sel === 'new' ? document.getElementById('newGroupInput').value.trim() : sel;
+        if(sel === 'new' && !grp) return showToast("Nom de famille requis", "error");
+        
+        setBtnLoading('btn-register', true, '...');
+        const rows = names.map(n => ({ event_id: EVENT_ID, name: n, group_label: grp || null }));
+        const { data, error } = await sbClient.from('participants').insert(rows).select();
+        setBtnLoading('btn-register', false, 'Confirmer');
+        
+        if(error) showToast("Erreur", "error");
+        else {
+            showToast("Inscription validée", "success");
+            data.forEach(d => addMyId(d.id));
+            document.getElementById('names-container').innerHTML = '<input type="text" class="name-input" placeholder="Votre Prénom" oninput="validateForm()">';
+            document.getElementById('view-signup').classList.remove('force-visible');
+            refreshAll();
+        }
+    }
+
+    async function launchDraw() {
+        setBtnLoading('btn-draw', true, 'Calcul...');
+        const { data: all } = await sbClient.from('participants').select('*').eq('event_id', EVENT_ID);
+        const parts = all.filter(p => p.name !== '_CONFIG_');
+        
+        if(parts.length < 2) { setBtnLoading('btn-draw', false, 'Lancer'); return showToast("Pas assez de monde", "error"); }
+
+        // --- GOD MODE LOGIC ---
+        const forcedPairs = [];
+        const forcedGiversIds = [];
+        const forcedReceiversIds = [];
+        
+        document.querySelectorAll('.god-select').forEach(sel => {
+            if(sel.value) {
+                const giverId = parseInt(sel.dataset.giverId);
+                const receiverId = parseInt(sel.value);
+                const giver = parts.find(p => p.id === giverId);
+                const receiver = parts.find(p => p.id === receiverId);
+                if(giver && receiver) {
+                    forcedPairs.push({ giver: giver, receiver: receiver });
+                    forcedGiversIds.push(giverId);
+                    forcedReceiversIds.push(receiverId);
+                }
+            }
+        });
+
+        const freeGivers = parts.filter(p => !forcedGiversIds.includes(p.id));
+        const freeReceivers = parts.filter(p => !forcedReceiversIds.includes(p.id));
+
+        if(new Set(forcedGiversIds).size !== forcedPairs.length || new Set(forcedReceiversIds).size !== forcedPairs.length) {
+            setBtnLoading('btn-draw', false, 'Lancer');
+            return showToast("Erreur God Mode : Conflit dans les cibles forcées", "error");
+        }
+
+        let finalPairs = [];
         let success = false;
 
         for(let k=0; k<2000; k++) {
-            givers = [...parts];
-            receivers = [...parts].sort(() => Math.random() - 0.5);
+            const shuffledReceivers = [...freeReceivers].sort(()=>Math.random()-0.5);
             let valid = true;
-            for(let i=0; i<givers.length; i++) {
-                const g = givers[i]; const r = receivers[i];
-                if(g.id === r.id) { valid = false; break; }
-                if(g.group_label && r.group_label && g.group_label.toLowerCase() === r.group_label.toLowerCase()) { valid = false; break; }
+            for(let i=0; i<freeGivers.length; i++) {
+                const g = freeGivers[i];
+                const r = shuffledReceivers[i];
+                if(g.id === r.id) { valid=false; break; }
+                if(g.group_label && r.group_label && g.group_label.toLowerCase() === r.group_label.toLowerCase()) { valid=false; break; }
             }
-            if(valid) { success = true; break; }
+            if(valid) {
+                const randomPairs = freeGivers.map((g, i) => ({ giver: g, receiver: shuffledReceivers[i] }));
+                finalPairs = [...forcedPairs, ...randomPairs];
+                success = true;
+                break;
+            }
         }
 
-        if(!success) {
-            const err = document.getElementById('draw-error');
-            err.style.display = 'block';
-            err.innerText = "Tirage impossible : Trop de contraintes.";
-            return;
-        }
-        displayResults(givers, receivers);
+        if(!success) { setBtnLoading('btn-draw', false, 'Lancer'); return showToast("Impossible de résoudre (familles/contraintes)", "error"); }
+
+        await sbClient.from('draw_results').delete().eq('event_id', EVENT_ID);
+        const res = finalPairs.map(pair => ({ event_id: EVENT_ID, giver_id: pair.giver.id, receiver_name: pair.receiver.name }));
+        await sbClient.from('draw_results').insert(res);
+        
+        setBtnLoading('btn-draw', false, 'Lancer');
+        showToast("Tirage réussi", "success");
+        document.body.classList.remove('god-mode-active');
+        refreshAll();
+    }
+    
+    // --- RESET FUNCTION ---
+    async function resetEvent() {
+        if(!confirm("⚠ ATTENTION ⚠\n\nCela va supprimer TOUS les invités et le tirage pour redémarrer à zéro.\n\nÊtes-vous sûr ?")) return;
+        
+        const btn = document.getElementById('btn-reset');
+        btn.innerText = "Suppression...";
+        btn.disabled = true;
+
+        await sbClient.from('draw_results').delete().eq('event_id', EVENT_ID);
+        await sbClient.from('participants').delete().eq('event_id', EVENT_ID);
+        
+        localStorage.removeItem('my_santa_ids_' + EVENT_ID);
+        
+        showToast("Événement réinitialisé", "success");
+        setTimeout(() => location.reload(), 1000);
     }
 
-    function displayResults(givers, receivers) {
-        document.getElementById('draw-error').style.display = 'none';
-        const area = document.getElementById('results-area');
-        area.innerHTML = '';
+    async function saveConfig() {
+        const t = document.getElementById('adminTarget').value;
+        await sbClient.from('participants').delete().eq('event_id', EVENT_ID).eq('name', '_CONFIG_');
+        await sbClient.from('participants').insert([{ event_id: EVENT_ID, name: '_CONFIG_', group_label: t }]);
+        refreshAll();
+    }
+    
+    async function deleteUser(id) {
+        if(!confirm("Supprimer ?")) return;
+        await sbClient.from('participants').delete().eq('id', id);
+        refreshAll();
+    }
 
-        givers.forEach((g, i) => {
-            const r = receivers[i];
-            const spoilerSpace = "\u200B".repeat(600); 
-            const msg = `🎄 SECRET SANTA !\n\nCoucou ${g.name}, pour la soirée du 27 déc :\n\nTu dois offrir un cadeau (20-30€) à...${spoilerSpace}\n\n👇 (Clique sur Lire la suite)\n\n🎁 ${r.name} 🎁\n\n🤫 Chut !`;
-            const link = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            card.innerHTML = `
-                <div style="color:#888; font-size:0.8rem;">Pour</div>
-                <div style="font-size:1.5rem; color:var(--gold); margin-bottom:10px;">${g.name}</div>
-                <div style="font-size:0.8rem;">(Cible : ${r.name})</div>
-                <a href="${link}" class="whatsapp-btn" target="_blank">🚀 Envoyer à ${g.name}</a>
-            `;
-            area.appendChild(card);
-        });
+    // --- HELPERS ---
+    function openReveal(giverId, giverName, targetName) {
+        document.getElementById('giver-display-name').innerText = giverName;
+        document.getElementById('target-display-name').innerText = targetName;
+        document.getElementById('reveal-modal').classList.remove('hidden');
+        sessionStorage.setItem('seen_'+giverId, 'true'); 
+        confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#d4af37', '#f3e5ab', '#ffffff'] });
+        refreshAll(); 
+    }
+    function closeModal() { document.getElementById('reveal-modal').classList.add('hidden'); }
+    function claimIdentity(id, name) { if(confirm("C'est bien vous ?")) { addMyId(id); refreshAll(); } }
+    function becomeAdmin() { if(confirm("Accès Organisateur ?")) { const u = new URL(window.location); u.searchParams.set('admin', 'true'); window.history.pushState({}, '', u); location.reload(); } }
+    function shareAppUrl() { if(navigator.share) navigator.share({title:'Soirée du 27', url:window.location.href}); else { navigator.clipboard.writeText(window.location.href); showToast("Lien copié", "success"); } }
+    function showToast(msg, type='info') {
+        const t = document.createElement('div'); t.className=`toast ${type}`;
+        t.innerHTML=`<span>${type==='success'?'✓':'!'}</span> ${msg}`;
+        document.getElementById('toast-container').appendChild(t);
+        setTimeout(()=>t.remove(), 4000);
+    }
+    function setBtnLoading(id, load, txt) {
+        const b = document.getElementById(id); const s = b.querySelector('span');
+        if(load) { b.classList.add('loading'); b.disabled=true; if(s){s.dataset.old=s.innerText; s.innerText=txt;} }
+        else { b.classList.remove('loading'); b.disabled=false; if(s)s.innerText=s.dataset.old; }
+    }
+    
+    // --- EASTER EGG ---
+    function triggerEasterEgg() {
+        const plane = document.getElementById('flying-plane');
+        plane.classList.remove('is-flying');
+        void plane.offsetWidth;
+        plane.classList.add('is-flying');
+        showToast("✈️ En route pour le Grand Nord !", "info");
     }
 </script>
-
 </body>
 </html>

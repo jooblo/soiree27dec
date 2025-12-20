@@ -46,7 +46,6 @@
         
         .subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 30px; }
 
-        /* Champs de saisie */
         .input-group { margin-bottom: 15px; }
         label { display: block; color: var(--gold); font-size: 0.8rem; margin-bottom: 5px; margin-left: 5px; }
         
@@ -59,7 +58,6 @@
         }
         input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 15px var(--gold-glow); }
 
-        /* Boutons */
         button {
             width: 100%; padding: 16px; border: none; border-radius: 12px;
             font-weight: 800; font-size: 1rem; cursor: pointer;
@@ -68,39 +66,23 @@
         }
         button:active { transform: scale(0.98); }
 
-        .btn-gold {
-            background: linear-gradient(135deg, #d4af37, #aa8c2c);
-            color: #000;
-        }
-        
-        .btn-admin {
-            background: #222; color: #ccc; border: 1px solid #444;
-            margin-top: 30px; font-size: 0.8rem; padding: 12px;
-        }
+        .btn-gold { background: linear-gradient(135deg, #d4af37, #aa8c2c); color: #000; }
+        .btn-admin { background: #222; color: #ccc; border: 1px solid #444; margin-top: 30px; font-size: 0.8rem; padding: 12px; }
 
-        /* Liste */
         #list { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
         .participant-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
             animation: fadeIn 0.5s ease;
         }
-        .tag-group {
-            font-size: 0.7rem; background: #333; color: #aaa;
-            padding: 2px 8px; border-radius: 6px; margin-left: 8px;
-        }
+        .tag-group { font-size: 0.7rem; background: #333; color: #aaa; padding: 2px 8px; border-radius: 6px; margin-left: 8px; }
 
-        /* Résultats Admin */
         .result-card {
-            background: #222; border: 1px solid #444;
-            padding: 20px; border-radius: 16px;
-            margin-bottom: 15px; text-align: center;
+            background: #222; border: 1px solid #444; padding: 20px; border-radius: 16px; margin-bottom: 15px; text-align: center;
         }
         .whatsapp-btn {
-            background: #25D366; color: white; display: flex; 
-            justify-content: center; align-items: center; gap: 10px;
-            text-decoration: none; padding: 12px; border-radius: 10px;
-            font-weight: bold; margin-top: 10px;
+            background: #25D366; color: white; display: flex; justify-content: center; align-items: center; gap: 10px;
+            text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; margin-top: 10px;
         }
 
         .hidden { display: none; }
@@ -143,11 +125,10 @@
         <div style="height:1px; background:#333; margin:30px 0;"></div>
         <h3 style="color:var(--gold); text-align:center;">Zone Organisateur</h3>
         <p style="text-align:center; font-size:0.8rem; color:#888;">
-            Attends que tout le monde soit inscrit, puis lance le tirage. Tu devras envoyer le résultat à chacun via WhatsApp.
+            Attends que tout le monde soit inscrit, puis lance le tirage.
         </p>
         <button class="btn-gold" onclick="launchDraw()">🎲 LANCER LE TIRAGE</button>
-        <p id="draw-error" style="color:#ff5555; text-align:center; display:none;"></p>
-        
+        <p id="draw-error" style="color:#ff5555; text-align:center; display:none; margin-top:10px;"></p>
         <div id="results-area" style="margin-top:20px;"></div>
     </div>
 
@@ -159,19 +140,16 @@
 </div>
 
 <script>
-    // --- TES IDENTIFIANTS (Corrects) ---
+    // --- CONFIGURATION ---
     const SUPABASE_URL = "https://trhdwabtdkbzqadqznvq.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_nbE57FWx6IYsRW7Qh_a8zA_Afwp4p4Y";
     
-    // Initialisation
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Initialisation avec un nom de variable unique (sbClient) pour éviter les conflits
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // Paramètres URL
     const params = new URLSearchParams(location.search);
     const EVENT_ID = params.get('event') || 'soiree27'; 
     
-    // --- LOGIQUE ---
-
     window.onload = function() {
         fetchParticipants();
         setInterval(fetchParticipants, 5000);
@@ -183,7 +161,6 @@
         }
     };
 
-    // S'INSCRIRE
     async function register() {
         const name = document.getElementById('inpName').value.trim();
         const group = document.getElementById('inpGroup').value.trim();
@@ -191,14 +168,14 @@
         if(!name) return alert("Indique ton prénom !");
         document.getElementById('msg-status').innerText = "Envoi...";
 
-        const { error } = await supabase.from('participants').insert([
+        // Utilisation de sbClient (et non supabase)
+        const { error } = await sbClient.from('participants').insert([
             { event_id: EVENT_ID, name: name, group_label: group || null }
         ]);
 
         if(error) {
-            console.error(error);
             alert("Erreur Inscription : " + error.message);
-            document.getElementById('msg-status').innerText = "Erreur (voir alerte)";
+            document.getElementById('msg-status').innerText = "";
         } else {
             document.getElementById('msg-status').innerText = "✅ Inscrit !";
             document.getElementById('inpName').value = "";
@@ -207,16 +184,15 @@
         }
     }
 
-    // RÉCUPÉRER LA LISTE
     async function fetchParticipants() {
-        const { data, error } = await supabase
+        // Utilisation de sbClient
+        const { data, error } = await sbClient
             .from('participants')
             .select('*')
             .eq('event_id', EVENT_ID)
             .order('created_at', { ascending: true });
 
         if(error) {
-            // Afficher l'erreur pour comprendre le blocage
             document.getElementById('loader').innerText = "ERREUR BDD : " + error.message;
             document.getElementById('loader').style.color = "red";
             console.error(error);
@@ -234,19 +210,14 @@
         participants.forEach(p => {
             const div = document.createElement('div');
             div.className = 'participant-row';
-            div.innerHTML = `
-                <span style="font-weight:600;">${p.name}</span>
-                ${p.group_label ? `<span class="tag-group">${p.group_label}</span>` : ''}
-            `;
+            div.innerHTML = `<span style="font-weight:600;">${p.name}</span>${p.group_label ? `<span class="tag-group">${p.group_label}</span>` : ''}`;
             container.appendChild(div);
         });
         window.currentParticipants = participants;
     }
 
-    // --- FONCTIONS ADMIN ---
-
     function becomeAdmin() {
-        if(confirm("Passer en mode organisateur ? (Tu pourras lancer le tirage)")) {
+        if(confirm("Passer en mode organisateur ?")) {
             const url = new URL(window.location);
             url.searchParams.set('admin', 'true');
             window.history.pushState({}, '', url);
@@ -276,10 +247,9 @@
         if(!success) {
             const err = document.getElementById('draw-error');
             err.style.display = 'block';
-            err.innerText = "Tirage impossible : Trop de contraintes de groupes/familles.";
+            err.innerText = "Tirage impossible : Trop de contraintes.";
             return;
         }
-
         displayResults(givers, receivers);
     }
 
@@ -297,9 +267,9 @@
             const card = document.createElement('div');
             card.className = 'result-card';
             card.innerHTML = `
-                <div style="color:#888; font-size:0.8rem;">C'est au tour de</div>
+                <div style="color:#888; font-size:0.8rem;">Pour</div>
                 <div style="font-size:1.5rem; color:var(--gold); margin-bottom:10px;">${g.name}</div>
-                <div style="font-size:0.8rem;">(Offre à : ${r.name})</div>
+                <div style="font-size:0.8rem;">(Cible : ${r.name})</div>
                 <a href="${link}" class="whatsapp-btn" target="_blank">🚀 Envoyer à ${g.name}</a>
             `;
             area.appendChild(card);

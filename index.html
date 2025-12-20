@@ -159,7 +159,7 @@
 </div>
 
 <script>
-    // --- TES IDENTIFIANTS SUPABASE (INTÉGRÉS) ---
+    // --- TES IDENTIFIANTS (Corrects) ---
     const SUPABASE_URL = "https://trhdwabtdkbzqadqznvq.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_nbE57FWx6IYsRW7Qh_a8zA_Afwp4p4Y";
     
@@ -189,21 +189,18 @@
         const group = document.getElementById('inpGroup').value.trim();
 
         if(!name) return alert("Indique ton prénom !");
+        document.getElementById('msg-status').innerText = "Envoi...";
 
-        document.getElementById('msg-status').innerText = "Inscription en cours...";
-
-        const { error } = await supabase
-            .from('participants')
-            .insert([
-                { event_id: EVENT_ID, name: name, group_label: group || null }
-            ]);
+        const { error } = await supabase.from('participants').insert([
+            { event_id: EVENT_ID, name: name, group_label: group || null }
+        ]);
 
         if(error) {
             console.error(error);
-            alert("Erreur lors de l'inscription. Vérifie ta connexion.");
-            document.getElementById('msg-status').innerText = "";
+            alert("Erreur Inscription : " + error.message);
+            document.getElementById('msg-status').innerText = "Erreur (voir alerte)";
         } else {
-            document.getElementById('msg-status').innerText = "✅ Tu es inscrit(e) !";
+            document.getElementById('msg-status').innerText = "✅ Inscrit !";
             document.getElementById('inpName').value = "";
             document.getElementById('inpGroup').value = "";
             fetchParticipants();
@@ -218,7 +215,12 @@
             .eq('event_id', EVENT_ID)
             .order('created_at', { ascending: true });
 
-        if(data) {
+        if(error) {
+            // Afficher l'erreur pour comprendre le blocage
+            document.getElementById('loader').innerText = "ERREUR BDD : " + error.message;
+            document.getElementById('loader').style.color = "red";
+            console.error(error);
+        } else if(data) {
             document.getElementById('loader').classList.add('hidden');
             renderList(data);
         }
@@ -244,8 +246,7 @@
     // --- FONCTIONS ADMIN ---
 
     function becomeAdmin() {
-        const pass = prompt("Mot de passe organisateur (Pour éviter les erreurs) :");
-        if(pass !== null) {
+        if(confirm("Passer en mode organisateur ? (Tu pourras lancer le tirage)")) {
             const url = new URL(window.location);
             url.searchParams.set('admin', 'true');
             window.history.pushState({}, '', url);
@@ -265,8 +266,7 @@
             receivers = [...parts].sort(() => Math.random() - 0.5);
             let valid = true;
             for(let i=0; i<givers.length; i++) {
-                const g = givers[i];
-                const r = receivers[i];
+                const g = givers[i]; const r = receivers[i];
                 if(g.id === r.id) { valid = false; break; }
                 if(g.group_label && r.group_label && g.group_label.toLowerCase() === r.group_label.toLowerCase()) { valid = false; break; }
             }
@@ -290,7 +290,6 @@
 
         givers.forEach((g, i) => {
             const r = receivers[i];
-            // Anti-spoil (caractères invisibles)
             const spoilerSpace = "\u200B".repeat(600); 
             const msg = `🎄 SECRET SANTA !\n\nCoucou ${g.name}, pour la soirée du 27 déc :\n\nTu dois offrir un cadeau (20-30€) à...${spoilerSpace}\n\n👇 (Clique sur Lire la suite)\n\n🎁 ${r.name} 🎁\n\n🤫 Chut !`;
             const link = `https://wa.me/?text=${encodeURIComponent(msg)}`;
